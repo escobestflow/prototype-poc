@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0a">
+
+  <!-- iOS standalone PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Prototype">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+  <!-- Android / Chrome PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png" type="image/png">
+
+  <title>Prototype POC</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #18181b;
+      --surface-2: #27272a;
+      --border: #3f3f46;
+      --text: #fafafa;
+      --text-dim: #a1a1aa;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      margin: 0; padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+      background: #000;
+      color: var(--text);
+      overscroll-behavior: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: 100svh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ---------- Device frame (desktop demo only) ---------- */
+    .frame {
+      position: relative;
+      width: 390px;
+      height: 844px;
+      background: #0a0a0a;
+      border-radius: 54px;
+      padding: 12px;
+      box-shadow:
+        0 0 0 2px #1a1a1a,
+        0 0 0 12px #2a2a2a,
+        0 30px 80px rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
+
+    .frame::before {
+      content: '';
+      position: absolute;
+      top: 18px; left: 50%;
+      transform: translateX(-50%);
+      width: 126px; height: 36px;
+      background: #000;
+      border-radius: 20px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .screen {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      border-radius: 42px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* On real mobile OR when launched standalone (from Home Screen) — no frame, fill viewport */
+    @media (max-width: 767px), (display-mode: standalone), (display-mode: fullscreen) {
+      body { align-items: stretch; justify-content: stretch; }
+      .frame {
+        width: 100%;
+        height: 100vh;
+        height: 100dvh;
+        border-radius: 0;
+        padding: 0;
+        box-shadow: none;
+      }
+      .frame::before { display: none; }
+      .screen {
+        border-radius: 0;
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    }
+
+    /* ---------- App chrome ---------- */
+    .appbar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      min-height: 52px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .appbar-title { font-size: 17px; font-weight: 600; margin: 0; }
+    .appbar-back, .appbar-action {
+      background: none; border: none;
+      color: var(--accent);
+      font-size: 16px; cursor: pointer;
+      padding: 6px 4px;
+    }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 20px;
+    }
+    .content-flush { padding: 0; }
+
+    .tabbar {
+      flex-shrink: 0;
+      display: flex;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+    }
+    .tab {
+      flex: 1;
+      padding: 10px 4px 12px;
+      background: none; border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-family: inherit;
+    }
+    .tab.active { color: var(--accent); }
+    .tab svg { width: 24px; height: 24px; }
+
+    /* ---------- Reusable UI ---------- */
+    .hero { padding: 8px 0 16px; }
+    .hero h1 {
+      font-size: 28px; font-weight: 700;
+      margin: 0 0 6px; letter-spacing: -0.02em;
+    }
+    .hero p { color: var(--text-dim); margin: 0 0 20px; line-height: 1.5; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 12px 18px;
+      background: var(--accent); color: white;
+      border: none; border-radius: var(--radius);
+      font-size: 15px; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      transition: background 0.15s;
+      font-family: inherit;
+    }
+    .btn:hover { background: var(--accent-hover); }
+    .btn-secondary { background: var(--surface-2); color: var(--text); }
+    .btn-secondary:hover { background: var(--border); }
+    .btn-block { width: 100%; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .card h3 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+    .card p { margin: 0; color: var(--text-dim); font-size: 13px; line-height: 1.4; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .list { list-style: none; margin: 0; padding: 0; }
+    .list-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 18px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .list-item:hover, .list-item:active { background: var(--surface); }
+    .list-item-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 13px;
+    }
+    .list-item-body { flex: 1; min-width: 0; }
+    .list-item-title { font-weight: 600; font-size: 15px; margin: 0 0 2px; }
+    .list-item-sub {
+      font-size: 13px; color: var(--text-dim); margin: 0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .list-item-chevron { color: var(--text-dim); opacity: 0.6; font-size: 20px; }
+
+    /* iOS install hint */
+    .install-banner {
+      position: absolute;
+      bottom: 72px; left: 12px; right: 12px;
+      background: var(--accent); color: white;
+      padding: 12px 14px; border-radius: var(--radius);
+      font-size: 13px;
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
+      display: flex; align-items: center; gap: 10px;
+      z-index: 50;
+    }
+    .install-banner-close {
+      background: rgba(255,255,255,0.2);
+      border: none; color: white;
+      width: 24px; height: 24px; border-radius: 50%;
+      cursor: pointer; flex-shrink: 0;
+    }
+
+    /* Views */
+    .view { display: none; flex-direction: column; height: 100%; }
+    .view.active { display: flex; }
+
+    /* Desktop hint below frame */
+    .hint {
+      position: fixed;
+      bottom: 20px; left: 20px; right: 20px;
+      text-align: center;
+      color: #52525b;
+      font-size: 12px;
+      pointer-events: none;
+    }
+    @media (max-width: 767px), (display-mode: standalone) {
+      .hint { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="screen">
+
+      <!-- Home -->
+      <section class="view active" data-view="home">
+        <header class="appbar">
+          <h1 class="appbar-title">Home</h1>
+          <button class="appbar-action" aria-label="Add">+</button>
+        </header>
+        <div class="content">
+          <div class="hero">
+            <h1>Welcome</h1>
+            <p>This is a prototype scaffold. Swap the screens, copy, and styling to match your real app.</p>
+            <button class="btn btn-block" data-nav="list">Browse projects</button>
+          </div>
+          <div class="grid-2" style="margin-top: 18px;">
+            <div class="card"><h3>Edit</h3><p>Change content inline in index.html.</p></div>
+            <div class="card"><h3>Duplicate</h3><p>Copy a view block to add screens.</p></div>
+            <div class="card"><h3>Theme</h3><p>Tune CSS variables at the top.</p></div>
+            <div class="card"><h3>Ship</h3><p>Commit & push — Pages auto-deploys.</p></div>
+          </div>
+        </div>
+        <nav class="tabbar" data-tabbar></nav>
+      </section>
+
+      <!-- List -->
+      <section class="view" data-view="list">
+        <header class="appbar">
+          <h1 class="appbar-title">Projects</h1>
+          <button class="appbar-action">Filter</button>
+        </header>
+        <div class="content content-flush">
+          <ul class="list" id="listItems"></ul>
+        </div>
+        <nav class="tabbar" data-tabbar></nav>
+      </section>
+
+      <!-- Detail -->
+      <section class="view" data-view="detail">
+        <header class="appbar">
+          <button class="appbar-back" data-nav="list">‹ Back</button>
+          <h1 class="appbar-title" id="detailTitle">Detail</h1>
+          <button class="appbar-action" aria-label="More">⋯</button>
+        </header>
+        <div class="content">
+          <div class="card">
+            <h3 id="detailName">Item</h3>
+            <p id="detailDesc">Detail content goes here.</p>
+          </div>
+          <button class="btn btn-block" style="margin-top: 14px;">Primary action</button>
+          <button class="btn btn-secondary btn-block" style="margin-top: 8px;" data-nav="list">Back to list</button>
+        </div>
+        <nav class="tabbar" data-tabbar></nav>
+      </section>
+
+      <!-- Profile -->
+      <section class="view" data-view="profile">
+        <header class="appbar">
+          <h1 class="appbar-title">Profile</h1>
+        </header>
+        <div class="content">
+          <div style="text-align:center; padding: 16px 0 20px;">
+            <div style="width:72px; height:72px; border-radius:50%; background: linear-gradient(135deg, var(--accent), #8b5cf6); margin: 0 auto 10px; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:600;">YA</div>
+            <h2 style="margin:0 0 2px; font-size:17px;">Your Account</h2>
+            <p style="color:var(--text-dim); margin:0; font-size:13px;">user@example.com</p>
+          </div>
+          <div class="card"><h3>Settings</h3><p>Tap to configure preferences.</p></div>
+          <div class="card"><h3>Appearance</h3><p>Dark by default. Edit CSS variables to retheme.</p></div>
+          <div class="card"><h3>About</h3><p>Built as a PWA scaffold. On iPhone: Share → Add to Home Screen for chromeless.</p></div>
+        </div>
+        <nav class="tabbar" data-tabbar></nav>
+      </section>
+
+      <!-- iOS install hint (Safari only, not standalone) -->
+      <div class="install-banner" id="installBanner" hidden>
+        <div style="flex:1;">On iPhone? Tap Share → <b>Add to Home Screen</b> to hide browser chrome.</div>
+        <button class="install-banner-close" aria-label="Dismiss">✕</button>
+      </div>
+
+    </div>
+  </div>
+  <div class="hint">Device frame shown on desktop · On mobile + Add to Home Screen, browser chrome disappears</div>
+
+  <script>
+    // ----- Sample data — replace with your own -----
+    const ITEMS = [
+      { id: 1, name: 'Onboarding Flow',     sub: 'Updated 2 days ago',    initials: 'OF' },
+      { id: 2, name: 'Checkout Redesign',   sub: 'In review',             initials: 'CR' },
+      { id: 3, name: 'Dashboard v2',        sub: '8 screens completed',   initials: 'D2' },
+      { id: 4, name: 'Settings Panel',      sub: 'Draft',                 initials: 'SP' },
+      { id: 5, name: 'Notifications',       sub: 'Spec pending',          initials: 'NT' },
+    ];
+
+    const TABS = [
+      { id: 'home',    label: 'Home',     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-7 9 7v11a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2z"/></svg>' },
+      { id: 'list',    label: 'Projects', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>' },
+      { id: 'profile', label: 'Profile',  icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>' },
+    ];
+
+    // ----- Render list items -----
+    document.getElementById('listItems').innerHTML = ITEMS.map(i => `
+      <li class="list-item" data-id="${i.id}">
+        <div class="list-item-avatar">${i.initials}</div>
+        <div class="list-item-body">
+          <p class="list-item-title">${i.name}</p>
+          <p class="list-item-sub">${i.sub}</p>
+        </div>
+        <span class="list-item-chevron">›</span>
+      </li>
+    `).join('');
+
+    // ----- Render shared tab bars -----
+    function renderTabs(active) {
+      const html = TABS.map(t => `
+        <button class="tab ${t.id === active ? 'active' : ''}" data-nav="${t.id}">
+          ${t.icon}<span>${t.label}</span>
+        </button>
+      `).join('');
+      document.querySelectorAll('[data-tabbar]').forEach(el => el.innerHTML = html);
+    }
+
+    // ----- Routing -----
+    function nav(view) {
+      document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.dataset.view === view));
+      renderTabs(view);
+      document.querySelectorAll('.content').forEach(c => c.scrollTop = 0);
+    }
+
+    function openDetail(id) {
+      const item = ITEMS.find(i => i.id === id);
+      if (!item) return;
+      document.getElementById('detailTitle').textContent = item.name;
+      document.getElementById('detailName').textContent  = item.name;
+      document.getElementById('detailDesc').textContent  = `${item.sub} — swap this for the real detail content for "${item.name}".`;
+      nav('detail');
+    }
+
+    // Event delegation: any element with [data-nav] navigates
+    document.addEventListener('click', e => {
+      const navTarget = e.target.closest('[data-nav]');
+      if (navTarget) { nav(navTarget.dataset.nav); return; }
+      const row = e.target.closest('.list-item');
+      if (row) openDetail(Number(row.dataset.id));
+    });
+
+    // iOS install banner
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    if (isIOS && !isStandalone) {
+      const banner = document.getElementById('installBanner');
+      banner.hidden = false;
+      banner.querySelector('.install-banner-close').addEventListener('click', () => banner.remove());
+    }
+
+    // Init
+    renderTabs('home');
+  </script>
+</body>
+</html>
