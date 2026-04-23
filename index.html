@@ -212,24 +212,6 @@
     }
     .list-item-chevron { color: var(--text-dim); opacity: 0.6; font-size: 20px; }
 
-    /* iOS install hint */
-    .install-banner {
-      position: absolute;
-      bottom: 72px; left: 12px; right: 12px;
-      background: var(--accent); color: white;
-      padding: 12px 14px; border-radius: var(--radius);
-      font-size: 13px;
-      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
-      display: flex; align-items: center; gap: 10px;
-      z-index: 50;
-    }
-    .install-banner-close {
-      background: rgba(255,255,255,0.2);
-      border: none; color: white;
-      width: 24px; height: 24px; border-radius: 50%;
-      cursor: pointer; flex-shrink: 0;
-    }
-
     /* Views */
     .view { display: none; flex-direction: column; height: 100%; }
     .view.active { display: flex; }
@@ -322,12 +304,6 @@
         <nav class="tabbar" data-tabbar></nav>
       </section>
 
-      <!-- iOS install hint (Safari only, not standalone) -->
-      <div class="install-banner" id="installBanner" hidden>
-        <div style="flex:1;">On iPhone? Tap Share → <b>Add to Home Screen</b> to hide browser chrome.</div>
-        <button class="install-banner-close" aria-label="Dismiss">✕</button>
-      </div>
-
     </div>
   </div>
   <div class="hint">Device frame shown on desktop · On mobile + Add to Home Screen, browser chrome disappears</div>
@@ -393,15 +369,6 @@
       const row = e.target.closest('.list-item');
       if (row) openDetail(Number(row.dataset.id));
     });
-
-    // iOS install banner
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-    if (isIOS && !isStandalone) {
-      const banner = document.getElementById('installBanner');
-      banner.hidden = false;
-      banner.querySelector('.install-banner-close').addEventListener('click', () => banner.remove());
-    }
 
     // Init
     renderTabs('home');
